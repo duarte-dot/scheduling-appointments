@@ -62,15 +62,60 @@ export class UsersController {
         return;
       }
 
+      const body = await this.getRequestBody(req);
+      let parsedBody: { includesDeleted?: boolean } = {};
+
+      // Verifica se o body não está vazio antes de tentar parsear
+      if (body) {
+        try {
+          parsedBody = JSON.parse(body);
+        } catch {
+          res.statusCode = 400; // Bad Request
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ error: "Invalid JSON" }));
+          return;
+        }
+      }
+
+      // Checa se includesDeleted foi passado e é verdadeiro
+      if (parsedBody.includesDeleted === true) {
+        res.statusCode = 200; // OK
+        res.setHeader("Content-Type", "application/json");
+
+        const userData: {
+          id: number;
+          name: string;
+          email: string;
+          deletedAt?: Date | null;
+        } = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        };
+
+        // Adiciona "deletedAt" apenas se não for null
+        if (user.deletedAt !== null) {
+          userData.deletedAt = user.deletedAt;
+        }
+
+        res.end(JSON.stringify(userData));
+        return;
+      }
+
+      if (user.deletedAt !== null) {
+        res.statusCode = 404; // Not Found
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "User not found" }));
+        return;
+      }
+
       res.statusCode = 200; // OK
       res.setHeader("Content-Type", "application/json");
       res.end(
         JSON.stringify({
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-          },
+          id: user.id,
+          name: user.name,
+          email: user.email,
         })
       );
     } catch (error: unknown) {
@@ -90,7 +135,7 @@ export class UsersController {
 
       // Obtendo o corpo da requisição, caso ele exista
       const body = await this.getRequestBody(req);
-      let parsedBody: { includesDeletedAt?: boolean } = {};
+      let parsedBody: { includesDeleted?: boolean } = {};
 
       // Verifica se o body não está vazio antes de tentar parsear
       if (body) {
@@ -104,8 +149,8 @@ export class UsersController {
         }
       }
 
-      // Checa se includesDeletedAt foi passado e é verdadeiro
-      if (parsedBody.includesDeletedAt === true) {
+      // Checa se includesDeleted foi passado e é verdadeiro
+      if (parsedBody.includesDeleted === true) {
         res.statusCode = 200; // OK
         res.setHeader("Content-Type", "application/json");
         res.end(
@@ -134,7 +179,7 @@ export class UsersController {
         return;
       }
 
-      // Caso includesDeletedAt não seja passado ou seja falso, filtra os usuários sem deletedAt
+      // Caso includesDeleted não seja passado ou seja falso, filtra os usuários sem deletedAt
       res.statusCode = 200; // OK
       res.setHeader("Content-Type", "application/json");
       res.end(

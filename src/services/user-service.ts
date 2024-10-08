@@ -17,7 +17,7 @@ export class UserService {
   }: UserServiceRequest): Promise<UserServiceResponse> {
     const emailAlreadyExists = await this.usersRepository.findByEmail(email);
 
-    if (emailAlreadyExists) {
+    if (emailAlreadyExists && emailAlreadyExists.deletedAt === null) {
       throw new Error("There is already an user with this email");
     }
 
@@ -52,6 +52,14 @@ export class UserService {
   }
 
   async delete(id: number): Promise<void> {
-    await this.usersRepository.delete(id);
+    try {
+      await this.usersRepository.delete(id);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new Error(error.message);
+      } else {
+        throw new Error("Unknown error");
+      }
+    }
   }
 }

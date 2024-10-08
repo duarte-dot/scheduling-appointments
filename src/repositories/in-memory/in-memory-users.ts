@@ -9,17 +9,13 @@ export class InMemoryUsersRepository implements UsersRepository {
   }
 
   async findById(id: number): Promise<User | null> {
-    const user = this.items.find(
-      (user) => user.id === id && user.deletedAt === null
-    );
+    const user = this.items.find((user) => user.id === id);
 
     return user || null;
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    const user = this.items.find(
-      (user) => user.email === email && user.deletedAt === null
-    );
+    const user = this.items.find((user) => user.email === email);
 
     return user || null;
   }
@@ -30,8 +26,13 @@ export class InMemoryUsersRepository implements UsersRepository {
 
   async delete(id: number): Promise<void> {
     const user = this.items.find((user) => user.id === id);
-    if (user) {
+
+    if (user && user.deletedAt !== null) {
+      throw new Error("User already deleted");
+    } else if (user && user.deletedAt === null) {
       user.deletedAt = new Date(); // Atualiza deletedAt
+    } else {
+      throw new Error("User not found");
     }
   }
 }
