@@ -21,7 +21,7 @@ export class InMemoryUsersRepository implements UsersRepository {
   }
 
   async getAll(): Promise<User[]> {
-    return this.items; // Retorna apenas usuários ativos
+    return this.items;
   }
 
   async delete(id: number): Promise<void> {

@@ -133,6 +133,13 @@ export class UsersController {
     try {
       const users = await this.userService.getAll();
 
+      if (users.length === 0) {
+        res.statusCode = 404; // Not Found
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "No users found" }));
+        return;
+      }
+
       // Obtendo o corpo da requisição, caso ele exista
       const body = await this.getRequestBody(req);
       let parsedBody: { includesDeleted?: boolean } = {};
@@ -154,8 +161,8 @@ export class UsersController {
         res.statusCode = 200; // OK
         res.setHeader("Content-Type", "application/json");
         res.end(
-          JSON.stringify({
-            users: users.map((user) => {
+          JSON.stringify(
+            users.map((user) => {
               const userData: {
                 id: number;
                 name: string;
@@ -173,8 +180,8 @@ export class UsersController {
               }
 
               return userData;
-            }),
-          })
+            })
+          )
         );
         return;
       }
@@ -183,15 +190,15 @@ export class UsersController {
       res.statusCode = 200; // OK
       res.setHeader("Content-Type", "application/json");
       res.end(
-        JSON.stringify({
-          users: users
+        JSON.stringify(
+          users
             .filter((user) => user.deletedAt === null)
             .map((user) => ({
               id: user.id,
               name: user.name,
               email: user.email,
-            })),
-        })
+            }))
+        )
       );
     } catch (error: unknown) {
       res.statusCode = 400; // Bad Request

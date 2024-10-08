@@ -39,7 +39,7 @@ export class UserService {
     return user;
   }
 
-  async findById(id: number): Promise<User | null> {
+  async findById(id: number): Promise<Omit<User, "props"> | null> {
     return this.usersRepository.findById(id);
   }
 
@@ -47,7 +47,7 @@ export class UserService {
     return this.usersRepository.findByEmail(email);
   }
 
-  async getAll(): Promise<User[]> {
+  async getAll(): Promise<Omit<User, "props">[]> {
     return this.usersRepository.getAll();
   }
 

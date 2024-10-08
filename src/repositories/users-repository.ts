@@ -2,8 +2,8 @@ import { User } from "../entities/user";
 
 export interface UsersRepository {
   create(user: User): Promise<void>;
-  findById(id: number): Promise<User | null>;
+  findById(id: number): Promise<Omit<User, "props"> | null>;
   findByEmail(email: string): Promise<User | null>;
-  getAll(): Promise<User[]>;
-  delete(id: number): Promise<void>; // Novo método para excluir usuário
+  getAll(): Promise<Omit<User, "props">[]>;
+  delete(id: number): Promise<void>;
 }
