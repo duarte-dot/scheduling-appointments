@@ -47,6 +47,43 @@ export class UsersController {
     }
   }
 
+  async getById(
+    req: IncomingMessage,
+    res: ServerResponse,
+    id: string
+  ): Promise<void> {
+    try {
+      const user = await this.userService.findById(Number(id));
+
+      if (!user) {
+        res.statusCode = 404; // Not Found
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "User not found" }));
+        return;
+      }
+
+      res.statusCode = 200; // OK
+      res.setHeader("Content-Type", "application/json");
+      res.end(
+        JSON.stringify({
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+          },
+        })
+      );
+    } catch (error: unknown) {
+      res.statusCode = 400; // Bad Request
+      res.setHeader("Content-Type", "application/json");
+      if (error instanceof Error) {
+        res.end(JSON.stringify({ error: error.message }));
+      } else {
+        res.end(JSON.stringify({ error: "Unknown error" }));
+      }
+    }
+  }
+
   async getAll(req: IncomingMessage, res: ServerResponse): Promise<void> {
     try {
       const users = await this.userService.getAll();

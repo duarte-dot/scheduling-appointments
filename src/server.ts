@@ -25,14 +25,19 @@ const requestHandler = async (req: IncomingMessage, res: ServerResponse) => {
         message: "Bem-vindo ao servidor Node.js com TypeScript!",
       })
     );
-  } else if (pathname === "/hello" && req.method === "GET") {
-    // Rota /hello
-    res.statusCode = 200;
-    res.end(JSON.stringify({ message: "Olá, mundo!" }));
   } else if (pathname === "/users" && req.method === "POST") {
     await usersController.create(req, res);
   } else if (pathname === "/users" && req.method === "GET") {
     await usersController.getAll(req, res);
+  } else if (pathname?.startsWith("/users/") && req.method === "GET") {
+    const userId = pathname.split("/")[2]; // Captura o ID da URL
+
+    if (userId) {
+      await usersController.getById(req, res, userId);
+    } else {
+      res.statusCode = 400; // Bad Request
+      res.end(JSON.stringify({ error: "Missing user id" }));
+    }
   } else if (pathname?.startsWith("/users/") && req.method === "DELETE") {
     const userId = pathname.split("/")[2]; // Captura o ID da URL
 
