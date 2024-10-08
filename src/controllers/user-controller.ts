@@ -31,8 +31,8 @@ export class UsersController {
         JSON.stringify({
           message: "User created",
           user: {
-            name: user.name,
-            email: user.email,
+            name: user!.name,
+            email: user!.email,
           },
         })
       );

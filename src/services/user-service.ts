@@ -6,7 +6,7 @@ interface UserServiceRequest {
   email: string;
 }
 
-type UserServiceResponse = User;
+type UserServiceResponse = Omit<User, "props"> | null;
 
 export class UserService {
   constructor(private usersRepository: UsersRepository) {}

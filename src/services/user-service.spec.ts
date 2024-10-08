@@ -15,8 +15,8 @@ describe("create an user", () => {
       })
       .then((user) => {
         expect(user).toBeInstanceOf(User);
-        expect(user.name).toBe("John Doe");
-        expect(user.email).toBe("john.doe@gmail.com");
+        expect(user!.name).toBe("John Doe");
+        expect(user!.email).toBe("john.doe@gmail.com");
       });
   });
 
@@ -54,8 +54,8 @@ describe("create an user", () => {
         email: "jane.doe@gmail.com",
       })
       .then((user) => {
-        expect(user.id).toBe(2);
-        expect(user.id).not.toBe(1);
+        expect(user!.id).toBe(2);
+        expect(user!.id).not.toBe(1);
 
         userService.delete(1).then(() => {
           userService
@@ -64,9 +64,9 @@ describe("create an user", () => {
               email: "john.doe@gmail.com",
             })
             .then((user) => {
-              expect(user.id).not.toBe(1);
-              expect(user.id).not.toBe(2);
-              expect(user.id).toBe(3);
+              expect(user!.id).not.toBe(1);
+              expect(user!.id).not.toBe(2);
+              expect(user!.id).toBe(3);
             });
         });
       });
