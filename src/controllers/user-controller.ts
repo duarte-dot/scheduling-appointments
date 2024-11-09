@@ -1,7 +1,13 @@
-// src/controllers/users-controller.ts
-import { IncomingMessage, ServerResponse } from "http";
-import { UserService } from "../services/user-service";
+import { FastifyReply, FastifyRequest } from "fastify";
 import { InMemoryUsersRepository } from "../repositories/in-memory/in-memory-users";
+import { UserService } from "../services/user-service";
+
+export type UserData = {
+  id: number;
+  name: string;
+  email: string;
+  deletedAt?: Date | null;
+};
 
 export class UsersController {
   private userService: UserService;
@@ -12,243 +18,122 @@ export class UsersController {
   }
 
   // Método para lidar com a criação de usuários
-  async create(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  async create(
+    req: FastifyRequest<{ Body: { name: string; email: string } }>,
+    res: FastifyReply
+  ): Promise<void> {
     try {
-      const body = await this.getRequestBody(req);
-      const { name, email } = JSON.parse(body);
+      const { name, email } = req.body;
 
       const user = await this.userService.execute({ name, email });
 
       if (!user) {
-        res.statusCode = 400; // Bad Request
-        res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({ error: "User not created" }));
+        res.status(400).send({ error: "User not created" });
       }
 
-      res.statusCode = 201; // Created
-      res.setHeader("Content-Type", "application/json");
-      res.end(
-        JSON.stringify({
-          message: "User created",
-          user: {
-            name: user!.name,
-            email: user!.email,
-          },
-        })
-      );
+      res.status(201).send({
+        message: "User created",
+        user: {
+          name: user!.name,
+          email: user!.email,
+        },
+      });
     } catch (error: unknown) {
-      res.statusCode = 400; // Bad Request
-      res.setHeader("Content-Type", "application/json");
       if (error instanceof Error) {
-        res.end(JSON.stringify({ error: error.message }));
-      } else {
-        res.end(JSON.stringify({ error: "Unknown error" }));
+        res.status(400).send({ error: error.message });
       }
     }
   }
 
   async getById(
-    req: IncomingMessage,
-    res: ServerResponse,
-    id: string
+    req: FastifyRequest<{ Params: { id: string } }>,
+    res: FastifyReply
   ): Promise<void> {
     try {
+      const { id } = req.params;
+
       const user = await this.userService.findById(Number(id));
 
       if (!user) {
-        res.statusCode = 404; // Not Found
-        res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({ error: "User not found" }));
-        return;
-      }
-
-      const body = await this.getRequestBody(req);
-      let parsedBody: { includesDeleted?: boolean } = {};
-
-      // Verifica se o body não está vazio antes de tentar parsear
-      if (body) {
-        try {
-          parsedBody = JSON.parse(body);
-        } catch {
-          res.statusCode = 400; // Bad Request
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "Invalid JSON" }));
-          return;
-        }
-      }
-
-      // Checa se includesDeleted foi passado e é verdadeiro
-      if (parsedBody.includesDeleted === true) {
-        res.statusCode = 200; // OK
-        res.setHeader("Content-Type", "application/json");
-
-        const userData: {
-          id: number;
-          name: string;
-          email: string;
-          deletedAt?: Date | null;
-        } = {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-        };
-
-        // Adiciona "deletedAt" apenas se não for null
-        if (user.deletedAt !== null) {
-          userData.deletedAt = user.deletedAt;
-        }
-
-        res.end(JSON.stringify(userData));
-        return;
-      }
-
-      if (user.deletedAt !== null) {
-        res.statusCode = 404; // Not Found
-        res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({ error: "User not found" }));
-        return;
-      }
-
-      res.statusCode = 200; // OK
-      res.setHeader("Content-Type", "application/json");
-      res.end(
-        JSON.stringify({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-        })
-      );
-    } catch (error: unknown) {
-      res.statusCode = 400; // Bad Request
-      res.setHeader("Content-Type", "application/json");
-      if (error instanceof Error) {
-        res.end(JSON.stringify({ error: error.message }));
+        res.status(404).send({ error: "User not found" });
       } else {
-        res.end(JSON.stringify({ error: "Unknown error" }));
+        res.status(200).send({ name: user.name, email: user.email });
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(400).send({ error: error.message });
       }
     }
   }
 
-  async getAll(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  async getAll(
+    req: FastifyRequest<{
+      Querystring: { includesDeleted?: "true" | "false" };
+    }>,
+    res: FastifyReply
+  ): Promise<void> {
     try {
       const users = await this.userService.getAll();
 
       if (users.length === 0) {
-        res.statusCode = 404; // Not Found
-        res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({ error: "No users found" }));
-        return;
+        return res.status(200).send(users);
       }
 
-      // Obtendo o corpo da requisição, caso ele exista
-      const body = await this.getRequestBody(req);
-      let parsedBody: { includesDeleted?: boolean } = {};
-
-      // Verifica se o body não está vazio antes de tentar parsear
-      if (body) {
-        try {
-          parsedBody = JSON.parse(body);
-        } catch {
-          res.statusCode = 400; // Bad Request
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "Invalid JSON" }));
-          return;
-        }
-      }
-
-      // Checa se includesDeleted foi passado e é verdadeiro
-      if (parsedBody.includesDeleted === true) {
-        res.statusCode = 200; // OK
-        res.setHeader("Content-Type", "application/json");
-        res.end(
-          JSON.stringify(
-            users.map((user) => {
-              const userData: {
-                id: number;
-                name: string;
-                email: string;
-                deletedAt?: Date | null;
-              } = {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-              };
-
-              // Adiciona "deletedAt" apenas se não for null
-              if (user.deletedAt !== null) {
-                userData.deletedAt = user.deletedAt;
-              }
-
-              return userData;
-            })
-          )
-        );
-        return;
-      }
-
-      // Caso includesDeleted não seja passado ou seja falso, filtra os usuários sem deletedAt
-      res.statusCode = 200; // OK
-      res.setHeader("Content-Type", "application/json");
-      res.end(
-        JSON.stringify(
-          users
-            .filter((user) => user.deletedAt === null)
-            .map((user) => ({
+      if (req.query.includesDeleted === "true") {
+        res.status(200).send(
+          users.map((user) => {
+            const userData: UserData = {
               id: user.id,
               name: user.name,
               email: user.email,
-            }))
-        )
+            };
+
+            // Adiciona "deletedAt" apenas se não for null
+            if (user.deletedAt !== null) {
+              userData.deletedAt = user.deletedAt;
+            }
+
+            return userData;
+          })
+        );
+      }
+
+      // Caso includesDeleted não seja passado ou seja falso, filtra os usuários sem deletedAt
+      res.status(200).send(
+        users
+          .filter((user) => user.deletedAt === null)
+          .map((user) => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+          }))
       );
     } catch (error: unknown) {
-      res.statusCode = 400; // Bad Request
-      res.setHeader("Content-Type", "application/json");
       if (error instanceof Error) {
-        res.end(JSON.stringify({ error: error.message }));
-      } else {
-        res.end(JSON.stringify({ error: "Unknown error" }));
+        res.status(400).send({ error: error.message });
       }
     }
   }
 
   // deletes user by id (gets id from url)
   async delete(
-    req: IncomingMessage,
-    res: ServerResponse,
-    id: string
+    req: FastifyRequest<{ Params: { id: string } }>,
+    res: FastifyReply
   ): Promise<void> {
     try {
-      await this.userService.delete(Number(id));
+      await this.userService.delete(Number(req.params.id));
 
-      res.statusCode = 200; // OK
-      res.setHeader("Content-Type", "application/json");
-      res.end(
-        JSON.stringify({ message: `User with id ${id} deleted successfully` })
-      );
+      res.status(202).send({
+        message: `User with id ${req.params.id} deleted successfully`,
+      });
     } catch (error: unknown) {
-      res.statusCode = 400; // Bad Request
-      res.setHeader("Content-Type", "application/json");
       if (error instanceof Error) {
-        res.end(JSON.stringify({ error: error.message }));
-      } else {
-        res.end(JSON.stringify({ error: "Unknown error" }));
+        res.status(400).send({ error: error.message });
       }
     }
   }
 
-  // Método auxiliar para ler o corpo da requisição
-  private getRequestBody(req: IncomingMessage): Promise<string> {
-    return new Promise((resolve, reject) => {
-      let body = "";
-      req.on("data", (chunk) => {
-        body += chunk;
-      });
-      req.on("end", () => {
-        resolve(body);
-      });
-      req.on("error", (err) => {
-        reject(err);
-      });
-    });
+  async clear(): Promise<void> {
+    await this.userService.clear();
   }
 }

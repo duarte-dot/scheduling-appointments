@@ -30,9 +30,13 @@ export class InMemoryUsersRepository implements UsersRepository {
     if (user && user.deletedAt !== null) {
       throw new Error("User already deleted");
     } else if (user && user.deletedAt === null) {
-      user.deletedAt = new Date(); // Atualiza deletedAt
+      user.deletedAt = new Date();
     } else {
       throw new Error("User not found");
     }
+  }
+
+  async clear() {
+    this.items = [];
   }
 }

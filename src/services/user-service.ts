@@ -39,7 +39,7 @@ export class UserService {
     return user;
   }
 
-  async findById(id: number): Promise<Omit<User, "props"> | null> {
+  async findById(id: number): Promise<User | null> {
     return this.usersRepository.findById(id);
   }
 
@@ -57,8 +57,16 @@ export class UserService {
     } catch (error: unknown) {
       if (error instanceof Error) {
         throw new Error(error.message);
-      } else {
-        throw new Error("Unknown error");
+      }
+    }
+  }
+
+  async clear(): Promise<void> {
+    try {
+      await this.usersRepository.clear();
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new Error(error.message);
       }
     }
   }
